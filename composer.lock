@@ -1,0 +1,93 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "f0611e7474eaae336f6592711216af8e",
+    "packages": [
+        {
+            "name": "vertilia/request",
+            "version": "v1.1.0",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vertilia/request.git",
+                "reference": "d4bd5258952d32c58a2a16ceaa4db3dedd81caf5"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vertilia/request/zipball/d4bd5258952d32c58a2a16ceaa4db3dedd81caf5",
+                "reference": "d4bd5258952d32c58a2a16ceaa4db3dedd81caf5",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.1",
+                "vertilia/valid-array": "^1.0"
+            },
+            "suggest": {
+                "phpunit/phpunit": "To run tests"
+            },
+            "type": "library",
+            "autoload": {
+                "exclude-from-classmap": [
+                    "/tests/"
+                ],
+                "psr-4": {
+                    "Vertilia\\Request\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "description": "Simple library to abstract requests (CLI, HTTP, etc.)",
+            "time": "2019-05-12T19:17:34+00:00"
+        },
+        {
+            "name": "vertilia/valid-array",
+            "version": "v1.1.1",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/vertilia/valid-array.git",
+                "reference": "0c98196d300ba116710df01bc39bde8f6565809b"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/vertilia/valid-array/zipball/0c98196d300ba116710df01bc39bde8f6565809b",
+                "reference": "0c98196d300ba116710df01bc39bde8f6565809b",
+                "shasum": ""
+            },
+            "require": {
+                "php": "^7.1"
+            },
+            "suggest": {
+                "phpunit/phpunit": "To run tests"
+            },
+            "type": "library",
+            "autoload": {
+                "exclude-from-classmap": [
+                    "/tests/"
+                ],
+                "psr-4": {
+                    "Vertilia\\ValidArray\\": "src/"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "BSD-2-Clause"
+            ],
+            "description": "Object with automatic items validation based on standard filtering mechanism of php",
+            "time": "2019-05-12T10:14:58+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": [],
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": "^7.1"
+    },
+    "platform-dev": []
+}

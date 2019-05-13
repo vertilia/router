@@ -1,0 +1,24 @@
+{
+  "name": "vertilia/router",
+  "description": "Simple router library",
+  "license": "BSD-2-Clause",
+  "type": "library",
+  "autoload": {
+    "exclude-from-classmap": [
+      "/tests/"
+    ],
+    "psr-4": {
+      "Vertilia\\Router\\": "src/"
+    }
+  },
+  "config": {
+    "optimize-autoloader": true
+  },
+  "require": {
+    "php": "^7.1",
+    "vertilia/request": "^1.0"
+  },
+  "suggest": {
+    "phpunit/phpunit": "To run tests"
+  }
+}
