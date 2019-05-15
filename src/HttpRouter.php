@@ -43,18 +43,27 @@ class HttpRouter implements RouterInterface
     }
 
     /**
-     * Receives list of routes in format {"METHOD URI": "CONTROLLER", ...}
-     * converts and registers the internal version in $routes in format
+     * Receives list of routes in format {"METHOD URI": "CONTROLLER", ...} or
+     * ['METHOD URI', ...], then converts and registers the internal version in
+     * $routes in the following format:
      * {"METHOD": {"URI_REGEX": "CONTROLLER_NAME", ...}, ...}
+     * If controller name is not prodided, it is considered to be the path with
+     * forward slashes translated to back slashes to separate namespaces.
      *
      * @param array $routes ex: {
-     *  "GET /": "IndexController",
-     *  "GET /v1/products/{id}": "ProductsController"
+     *  "GET /",
+     *  "GET /one/way",
+     *  "GET /another/way": "another\\way",
+     *  "GET /v1/products/{id}": "App\\ProductsController"
+     *  "GET /v2/users-{id}/friends": "App\\UsersController",
      * }
      * will register the following in $routes: {
      *  "GET": {
-     *      "#^/$#": "IndexController",
-     *      "#^/v1/products/(?P<id>[^/]+)$#": "ProductsController",
+     *      "#^/$#": "index",
+     *      "#^/one/way$#": "one\\way",
+     *      "#^/another/way$#": "another\\way",
+     *      "#^/v1/products/(?P<id>[^/]+)$#": "App\\ProductsController",
+     *      "#^/v2/users-(?P<id>[^/]+)/friends$#": "App\\UsersController",
      *  }
      * }
      * @return RouterInterface
@@ -71,22 +80,18 @@ class HttpRouter implements RouterInterface
             }
 
             list($method, $path) = \preg_split('/\s+/', "$route ");
-            $preg_parts = [];
-            $dir_parts = [];
-            foreach (\explode('/', Fs::normalizePath($path)) as $path_part) {
-                $m = [];
-                if (\substr($path_part, 0, 1) == '{'
-                    and \preg_match('#^\{([[:alpha:]_]\w*)\}$#', $path_part, $m)
-                ) {
-                    $preg_parts[] = "(?P<{$m[1]}>[^/]+)";
-                } elseif (\strlen($path_part)) {
-                    $preg_parts[] = \preg_quote($path_part, '#');
-                    $dir_parts[] = $path_part;
-                }
-            }
-            $struct[$method]['#^/'.\implode('/', $preg_parts).'$#'] = isset($controller)
+            $path_normalized = Fs::normalizePath($path);
+            $pattern = '#^/'.\preg_replace('/\{([[:alpha:]_]\w*)\}/', '(?P<$1>[^/]+)', $path_normalized).'$#';
+            $struct[$method][$pattern] = isset($controller)
                 ? $controller
-                : ($dir_parts ? \implode('\\', $dir_parts) : null);
+                : ($path_normalized === ''
+                    ? 'index'
+                    : \strtr(\preg_replace(
+                        ['#\{[[:alpha:]_]\w*\}#', '#[^\w/]+#', '#//+#', '#_?/_?#', '#^[/_]+#', '#[/_]+$#'],
+                        ['', '_', '/', '/', '', ''],
+                        $path_normalized
+                    ), '/', '\\')
+                );
         }
 
         $this->routes = \array_replace_recursive($this->routes, $struct);

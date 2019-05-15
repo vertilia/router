@@ -108,8 +108,8 @@ class HttpRouterTest extends TestCase
         // [server],
         //  get, post, cookie, php_input | controller, default_controller, args
         return [
-            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_CONTENT_TYPE' => null],
-                null, null, null, null, 'IndexController', null, null],
+//            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_CONTENT_TYPE' => null],
+//                null, null, null, null, 'IndexController', null, null],
 
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v1///users//./q', 'HTTP_CONTENT_TYPE' => null],
                 null, null, null, null, 'UsersController', null, null],
@@ -129,6 +129,13 @@ class HttpRouterTest extends TestCase
 
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '**UNDEFINED_ROUTE**', 'HTTP_CONTENT_TYPE' => null],
                 null, null, null, null, 'UndefinedController', 'UndefinedController', null],
+
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, 'index', null, null],
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/api/users--up/123/some.controller', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, 'api\users_up\some_controller', null, ['id' => 123]],
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/o.n.c.e.../--users-123-down--/--234.controller--', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, 'users_down\controller', null, ['id' => 123, 'ver' => 234]],
         ];
     }
 }
