@@ -40,10 +40,9 @@ class HttpRouterTest extends TestCase
         // router table within constructor
         $router = new HttpRouter($request, [__DIR__ . '/http-routes.php']);
         $this->assertInstanceOf(RouterInterface::class, $router);
-        $this->assertTrue(\is_bool($router->parseRoute()));
 
         // check controller
-        $this->assertEquals($controller, $router->getResponseController($default_controller));
+        $this->assertEquals($controller, $router->getController($default_controller));
 
         // check arguments
         if (isset($args)) {
@@ -85,10 +84,12 @@ class HttpRouterTest extends TestCase
 
         // set routes outside the constructor
         $router = new HttpRouter($request);
-        $this->assertTrue(\is_bool($router->addRoutes(include __DIR__.'/http-routes.php')->parseRoute()));
 
         // check controller
-        $this->assertEquals($controller, $router->getResponseController($default_controller));
+        $this->assertEquals(
+            $controller,
+            $router->addRoutes(include __DIR__.'/http-routes.php')->getController($default_controller)
+        );
 
         // check arguments
         if (isset($args)) {
@@ -132,10 +133,16 @@ class HttpRouterTest extends TestCase
 
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_CONTENT_TYPE' => null],
                 null, null, null, null, 'index', null, null],
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/api/contracts', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, 'api\contracts', null, null],
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/--api--/--contracts--/--', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, '_api_\_contracts_\_', null, null],
+            [['REQUEST_METHOD' => 'DELETE', 'REQUEST_URI' => '/api/contracts/123', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, 'api\contracts\_id_', null, ['id' => 123]],
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/api/users--up/123/some.controller', 'HTTP_CONTENT_TYPE' => null],
-                null, null, null, null, 'api\users_up\some_controller', null, ['id' => 123]],
+                null, null, null, null, 'api\users_up\_id_\some_controller', null, ['id' => 123]],
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/o.n.c.e.../--users-123-down--/--234.controller--', 'HTTP_CONTENT_TYPE' => null],
-                null, null, null, null, 'users_down\controller', null, ['id' => 123, 'ver' => 234]],
+                null, null, null, null, '_o_n_c_e_\_users_id_down_\_ver_controller_', null, ['id' => 123, 'ver' => 234]],
         ];
     }
 }

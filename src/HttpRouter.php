@@ -12,11 +12,9 @@ class HttpRouter implements RouterInterface
     protected $request;
     /** @var array */
     protected $routes = [];
-    /** @var string */
-    protected $controller;
 
     /**
-     * When array of files is provided, latter entries overwrite existing ones
+     * When array of files is provided, latter entries overwrite existing ones.
      *
      * @param HttpRequestInterface $request
      * @param array|string $routes_path path to configuration file (or a list of
@@ -81,17 +79,18 @@ class HttpRouter implements RouterInterface
 
             list($method, $path) = \preg_split('/\s+/', "$route ");
             $path_normalized = Fs::normalizePath($path);
-            $pattern = '#^/'.\preg_replace('/\{([[:alpha:]_]\w*)\}/', '(?P<$1>[^/]+)', $path_normalized).'$#';
-            $struct[$method][$pattern] = isset($controller)
-                ? $controller
-                : ($path_normalized === ''
+            $var = 0;
+            $pattern = '#^/'.\preg_replace('/\{([[:alpha:]_]\w*)\}/', '(?P<$1>[^/]+)', $path_normalized, -1, $var).'$#';
+            $ctr = $controller
+                ?? ($path_normalized === ''
                     ? 'index'
-                    : \strtr(\preg_replace(
-                        ['#\{[[:alpha:]_]\w*\}#', '#[^\w/]+#', '#//+#', '#_?/_?#', '#^[/_]+#', '#[/_]+$#'],
-                        ['', '_', '/', '/', '', ''],
-                        $path_normalized
-                    ), '/', '\\')
+                    : \preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
                 );
+            if ($var) {
+                $struct[$method]['regex'][$pattern] = $ctr;
+            } else {
+                $struct[$method]['static']["/$path_normalized"] = $ctr;
+            }
         }
 
         $this->routes = \array_replace_recursive($this->routes, $struct);
@@ -99,42 +98,39 @@ class HttpRouter implements RouterInterface
         return $this;
     }
 
-    /**
-     * Tries to match $http_path in $routes and set $controller to
-     * corresponding name if found.
-     * @return bool whether $controller was set
-     */
-    public function parseRoute(): bool
+    public function getController(string $default_controller = null): ?string
     {
-        $this->controller = null;
+        $method = $this->request->getMethod();
 
         if (empty($this->routes)
             or ! \is_array($this->routes)
-            or empty($this->routes[$this->request->getMethod()])
+            or empty($this->routes[$method])
         ) {
-            return false;
+            return $default_controller;
         }
 
-        $path = '/' . Fs::normalizePath($this->request->getPath());
+        $path_normalized = '/' . Fs::normalizePath($this->request->getPath());
 
-        foreach ($this->routes[$this->request->getMethod()] as $regex => $controller) {
-            $m = null;
-            if (\preg_match($regex, $path, $m)) {
-                $this->controller = $controller;
-                foreach ($m as $k => $v) {
-                    if (\is_string($k)) {
-                        $this->request[$k] = $v;
+        if (isset($this->routes[$method]['static'])
+            and isset($this->routes[$method]['static'][$path_normalized])
+        ) {
+            return $this->routes[$method]['static'][$path_normalized];
+        }
+
+        if (isset($this->routes[$method]['regex'])) {
+            foreach ($this->routes[$method]['regex'] as $regex => $controller) {
+                $m = null;
+                if (\preg_match($regex, $path_normalized, $m)) {
+                    foreach ($m as $k => $v) {
+                        if (\is_string($k)) {
+                            $this->request[$k] = $v;
+                        }
                     }
+                    return $controller;
                 }
-                return true;
             }
         }
 
-        return false;
-    }
-
-    public function getResponseController(string $default_controller = null): ?string
-    {
-        return $this->controller ?: $default_controller;
+        return $default_controller;
     }
 }

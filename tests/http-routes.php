@@ -1,7 +1,7 @@
 <?php
 
 return [
-    // path => controller values
+    // path in keys => controller in values
 //    'GET /' => 'IndexController',
 
     'GET /{ver}/products' => 'ProductsController',
@@ -13,8 +13,11 @@ return [
 
     'GET /{ver}/users/{id}' => 'UsersController',
 
-    // path-only values
+    // path-only values, controller from path
     'GET /',
+    'GET /api/contracts',
+    'GET /--api--/--contracts--/--',
+    'DELETE /api/contracts/{id}',
     'GET /api/users--up/{id}/some.controller',
     'GET /{o}.{n}.{c}.{e}.../--users-{id}-down--/--{ver}.controller--',
 ];

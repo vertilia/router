@@ -4,13 +4,13 @@ declare(strict_types=1);
 namespace Vertilia\Router;
 
 /**
- * Children must identify a name for the response controller
- * via getResponseController() method.
+ * Children set routing tables via addRoutes() calls and identify the name for
+ * the response controller via getController() method
  */
 interface RouterInterface
 {
     /**
-     * Receives list of routes to use in parseRoute()
+     * Adds a new list of routes to existing ones
      *
      * @param array $routes
      * @return RouterInterface
@@ -18,17 +18,10 @@ interface RouterInterface
     public function addRoutes(array $routes): RouterInterface;
 
     /**
-    * Tries to match current request to specific controller from the routing
-    * table stored by addRoutes().
-    *
-    * @return bool whether controller was found
-    */
-    public function parseRoute(): bool;
-
-    /**
+     * Returns controller matching current request for the routing table
+     *
      * @param string|null $default_controller
-     * @return string controller name found with parseRoute() or
-     *  $default_controller value
+     * @return bool whether controller was found
      */
-    public function getResponseController(string $default_controller = null): ?string;
+    public function getController(string $default_controller = null): ?string;
 }
