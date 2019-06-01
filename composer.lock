@@ -8,16 +8,16 @@
     "packages": [
         {
             "name": "vertilia/request",
-            "version": "v1.1.0",
+            "version": "v1.2.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vertilia/request.git",
-                "reference": "d4bd5258952d32c58a2a16ceaa4db3dedd81caf5"
+                "reference": "695281113c4ca2b6f2ea7eb5de0712050fdbfdad"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vertilia/request/zipball/d4bd5258952d32c58a2a16ceaa4db3dedd81caf5",
-                "reference": "d4bd5258952d32c58a2a16ceaa4db3dedd81caf5",
+                "url": "https://api.github.com/repos/vertilia/request/zipball/695281113c4ca2b6f2ea7eb5de0712050fdbfdad",
+                "reference": "695281113c4ca2b6f2ea7eb5de0712050fdbfdad",
                 "shasum": ""
             },
             "require": {
@@ -41,20 +41,20 @@
                 "BSD-2-Clause"
             ],
             "description": "Simple library to abstract requests (CLI, HTTP, etc.)",
-            "time": "2019-05-12T19:17:34+00:00"
+            "time": "2019-05-19T11:26:52+00:00"
         },
         {
             "name": "vertilia/valid-array",
-            "version": "v1.1.1",
+            "version": "v1.2.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/vertilia/valid-array.git",
-                "reference": "0c98196d300ba116710df01bc39bde8f6565809b"
+                "reference": "3c08edfee1a8f9aa82f10ddbdb0ecda3b65f064c"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/vertilia/valid-array/zipball/0c98196d300ba116710df01bc39bde8f6565809b",
-                "reference": "0c98196d300ba116710df01bc39bde8f6565809b",
+                "url": "https://api.github.com/repos/vertilia/valid-array/zipball/3c08edfee1a8f9aa82f10ddbdb0ecda3b65f064c",
+                "reference": "3c08edfee1a8f9aa82f10ddbdb0ecda3b65f064c",
                 "shasum": ""
             },
             "require": {
@@ -77,7 +77,7 @@
                 "BSD-2-Clause"
             ],
             "description": "Object with automatic items validation based on standard filtering mechanism of php",
-            "time": "2019-05-12T10:14:58+00:00"
+            "time": "2019-05-19T11:13:27+00:00"
         }
     ],
     "packages-dev": [],
