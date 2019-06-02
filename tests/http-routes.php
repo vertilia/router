@@ -33,4 +33,11 @@ return [
         'controller' => 'OrdersController',
         'filters' => ['ver' => ['filter' => FILTER_VALIDATE_INT, 'flags' => FILTER_FORCE_ARRAY]]
     ],
+
+    // path, type, controller and filters in array
+    [
+        'route' => 'POST /v{ver}/orders/ application/json',
+        'controller' => 'OrdersJsonController',
+        'filters' => ['ver' => ['filter' => FILTER_VALIDATE_INT, 'flags' => FILTER_FORCE_ARRAY]]
+    ],
 ];

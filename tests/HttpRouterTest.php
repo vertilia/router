@@ -135,8 +135,12 @@ class HttpRouterTest extends TestCase
                 null, null, null, null, 'OrdersController', null, ['ver' => null, 'id' => false], null],
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v1/orders/---', 'HTTP_CONTENT_TYPE' => null],
                 null, null, null, null, 'OrdersController', null, ['ver' => null, 'id' => false], null],
-            [['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/v1/orders', 'HTTP_CONTENT_TYPE' => null],
+
+            [['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/v1/orders', 'HTTP_CONTENT_TYPE' => 'unknown'],
                 null, null, null, null, 'OrdersController', null, ['ver' => [1]], null],
+
+            [['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/v1/orders', 'HTTP_CONTENT_TYPE' => 'application/json'],
+                null, null, null, null, 'OrdersJsonController', null, ['ver' => [1]], null],
         ];
     }
 }

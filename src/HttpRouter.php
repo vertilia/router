@@ -44,14 +44,14 @@ class HttpRouter implements RouterInterface
     /**
      * Receives list of routes in one of recognized formats, then converts and
      * registers the internal version in $routes in the following format:
-     * $routes.static: {"METHOD": {"URI": "CONTROLLER_NAME", ...}, ...} or
-     * $routes.regex: {"METHOD": {"URI_REGEX": "CONTROLLER_NAME", ...}, ...}
+     * $routes.static: {"METHOD CONTENT-TYPE": {"URI": "CONTROLLER_NAME", ...}, ...} or
+     * $routes.regex: {"METHOD CONTENT-TYPE": {"URI_REGEX": "CONTROLLER_NAME", ...}, ...}
      *
      * Recognized formats:
      *  - ["METHOD URI", ...]
      *  - {"METHOD URI": "CONTROLLER", ...}
-     *  - {"METHOD URI": {controller: "CONTROLLER", filters: {FILTERS}}, ...}
-     *  - [{route: "METHOD URI", controller: "CONTROLLER", filters: {FILTERS}}, ...]
+     *  - {"METHOD URI CONTENT-TYPE": {controller: "CONTROLLER", filters: {FILTERS}}, ...}
+     *  - [{route: "METHOD URI CONTENT-TYPE", controller: "CONTROLLER", filters: {FILTERS}}, ...]
      *
      * Regex version is used when {var-name} parameters are provided in path.
      *
@@ -66,7 +66,7 @@ class HttpRouter implements RouterInterface
      *  "GET /another/way": "Another\\Way",
      *  "GET /third/way/{id}",
      *  "GET /v1/products/{id}": "App\\ProductsController",
-     *  "GET /v1/users-{id}/friends": {
+     *  "GET /v1/users-{id}/friends application/json": {
      *      "controller": "App\\UsersController",
      *      "filters": {"id": FILTER_VALIDATE_INT}
      *  }
@@ -79,13 +79,15 @@ class HttpRouter implements RouterInterface
      *  }
      * }
      * ...and the following in $routes.regex: {
-     *  "GET": {
-     *      "#^/third/way/(?P<id>[^/]+)$#": "third\\way\\_id_",
-     *      "#^/v1/products/(?P<id>[^/]+)$#": "App\\ProductsController",
+     *  "GET application/json": {
      *      "#^/v2/users-(?P<id>[^/]+)/friends$#": [
      *          "App\\UsersController",
      *          {"id": FILTER_VALIDATE_INT}
      *      ]
+     *  },
+     *  "GET": {
+     *      "#^/third/way/(?P<id>[^/]+)$#": "third\\way\\_id_",
+     *      "#^/v1/products/(?P<id>[^/]+)$#": "App\\ProductsController"
      *  }
      * }
      * @return RouterInterface
@@ -120,7 +122,7 @@ class HttpRouter implements RouterInterface
                 $filters = null;
             }
 
-            list($method, $path) = \preg_split('/\s+/', $route, 2);
+            list($method, $path, $type) = \preg_split('/\s+/', $route, 3);
             if (!isset($path)) {
                 $path = $method;
                 $method = 'GET';
@@ -139,12 +141,13 @@ class HttpRouter implements RouterInterface
                     ? 'index'
                     : \preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
                 );
+            $method_type = \rtrim("$method $type");
             if ($var) {
-                $struct[$method]['regex'][$pattern] = isset($filters)
+                $struct[$method_type]['regex'][$pattern] = isset($filters)
                     ? [$ctr, $filters]
                     : $ctr;
             } else {
-                $struct[$method]['static']["/$path_normalized"] = $ctr;
+                $struct[$method_type]['static']["/$path_normalized"] = $ctr;
             }
         }
 
@@ -170,44 +173,48 @@ class HttpRouter implements RouterInterface
     public function getController(string $default_controller = null)
     {
         $method = $this->request->getMethod();
+        $type = $this->request->getHeaders()['content-type'] ?? null;
+        $method_type = \rtrim("$method $type");
 
-        if (empty($this->routes)
-            or ! \is_array($this->routes)
-            or empty($this->routes[$method])
-        ) {
+        if (empty($this->routes) or ! \is_array($this->routes)) {
+            return $default_controller;
+        } elseif (empty($this->routes[$method_type]) and empty($this->routes[$method])) {
             return $default_controller;
         }
 
         $path_normalized = '/' . Fs::normalizePath($this->request->getPath());
 
-        // check static path
-        if (isset($this->routes[$method]['static'])
-            and isset($this->routes[$method]['static'][$path_normalized])
-        ) {
+        // check static path in "METHOD TYPE"
+        if (isset($this->routes[$method_type]['static'][$path_normalized])) {
+            return $this->routes[$method_type]['static'][$path_normalized];
+        // check static path in "METHOD"
+        } elseif (isset($this->routes[$method]['static'][$path_normalized])) {
             return $this->routes[$method]['static'][$path_normalized];
         }
 
-        // check regex path
-        if (isset($this->routes[$method]['regex'])) {
-            foreach ($this->routes[$method]['regex'] as $regex => $ctr_flt) {
-                $m = null;
-                if (\preg_match($regex, $path_normalized, $m)) {
-                    if (\is_array($ctr_flt)) {
-                        list ($controller, $filters) = $ctr_flt;
-                        if ($filters) {
-                            $this->request->addFilters($filters);
+        // check regex paths in "METHOD TYPE" and "METHOD"
+        foreach ([$method_type, $method] as $m_t) {
+            if (isset($this->routes[$m_t]['regex'])) {
+                foreach ($this->routes[$m_t]['regex'] as $regex => $ctr_flt) {
+                    $m = null;
+                    if (\preg_match($regex, $path_normalized, $m)) {
+                        if (\is_array($ctr_flt)) {
+                            list ($controller, $filters) = $ctr_flt;
+                            if ($filters) {
+                                $this->request->addFilters($filters);
+                            }
+                        } else {
+                            $controller = $ctr_flt;
                         }
-                    } else {
-                        $controller = $ctr_flt;
-                    }
 
-                    foreach ($m as $k => $v) {
-                        if (\is_string($k)) {
-                            $this->request[$k] = $v;
+                        foreach ($m as $k => $v) {
+                            if (\is_string($k)) {
+                                $this->request[$k] = $v;
+                            }
                         }
-                    }
 
-                    return $controller;
+                        return $controller;
+                    }
                 }
             }
         }

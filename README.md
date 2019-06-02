@@ -86,3 +86,13 @@ return [
 
 In the last route filters are provided not only for path parameter `id` but also for `description` and `image`
 parameters that may come from query, cookies or http headers.
+
+It is also possible to provide content type when defining the route, like in
+```
+GET /products/{id} application/json
+```
+to be able to set different controllers and validations for different types. In this case content type-specific routes
+take precedence over generic routes, like in
+```
+GET /products/{id}
+```
