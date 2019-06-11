@@ -7,4 +7,5 @@ Thumbs.db
 .idea/*
 
 # composer
+composer.lock
 vendor/
