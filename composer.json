@@ -16,6 +16,7 @@
   },
   "require": {
     "php": "^7.1",
+    "vertilia/parser": "^1.0",
     "vertilia/request": "^1.0"
   },
   "suggest": {

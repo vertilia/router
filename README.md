@@ -96,3 +96,48 @@ take precedence over generic routes, like in
 ```
 GET /products/{id}
 ```
+
+# Sample petstore.yaml specification
+
+API specification file is vailable from
+[OpenAPI](https://github.com/OAI/OpenAPI-Specification/blob/master/examples/v3.0/petstore-expanded.yaml) github
+repository.
+
+Routing file corresponding to the specification is as follows:
+
+```php
+<?php
+// etc/routes.php
+return [
+    'GET /pets' => [
+        'controller' => 'findPets',
+        'filters' => [
+            'tags' => [
+                'filter' => FILTER_CALLBACK,
+                'options' => function($v){return is_string($v) ? explode(',', $v) : false;},
+            ],
+            'limit' => FILTER_VALIDATE_INT,
+        ],
+    ],
+    'POST /pets application/json' => [
+        'controller' => 'addPet',
+        'filters' => [
+            'name' => FILTER_DEFAULT,
+            'tag' => FILTER_DEFAULT,
+        ],
+    ]
+
+    'GET /pets/{id}' => [
+        'controller' => 'find_pet_by_id',
+        'filters' => [
+            'id' => FILTER_VALIDATE_INT,
+        ],
+    ],
+    'DELETE /pets/{id}' => [
+        'controller' => 'deletePet',
+        'filters' => [
+            'id' => FILTER_VALIDATE_INT,
+        ],
+    ],
+];
+```

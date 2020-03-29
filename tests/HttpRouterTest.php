@@ -3,6 +3,7 @@
 namespace Vertilia\Router;
 
 use PHPUnit\Framework\TestCase;
+use Vertilia\Parser\OpenApiParser;
 use Vertilia\Request\HttpRequest;
 
 /**
@@ -22,16 +23,19 @@ class HttpRouterTest extends TestCase
         // new request
         $request = new HttpRequest([]);
 
+        // new OpenApi parser
+        $parser = new OpenApiParser();
+
         // router table within constructor as array
-        $router1 = new HttpRouter($request, [__DIR__.'/http-routes.php']);
+        $router1 = new HttpRouter($request, $parser, [__DIR__.'/http-routes.php']);
         $this->assertInstanceOf(RouterInterface::class, $router1);
 
         // router table within constructor as string
-        $router2 = new HttpRouter($request, __DIR__.'/http-routes.php');
+        $router2 = new HttpRouter($request, $parser, __DIR__.'/http-routes.php');
         $this->assertInstanceOf(RouterInterface::class, $router2);
 
         // router table from setter
-        $router3 = new HttpRouter($request);
+        $router3 = new HttpRouter($request, $parser);
         $router3->addRoutes(include __DIR__.'/http-routes.php');
         $this->assertInstanceOf(RouterInterface::class, $router3);
     }
@@ -56,8 +60,11 @@ class HttpRouterTest extends TestCase
         // new request
         $request = new HttpRequest($server, $get, $post, $cookie, $php_input, $filters);
 
+        // new OpenAPI parser
+        $parser = new OpenApiParser();
+
         // router table within constructor
-        $router = new HttpRouter($request, __DIR__ . '/http-routes.php');
+        $router = new HttpRouter($request, $parser, __DIR__ . '/http-routes.php');
 
         // check controller
         $this->assertEquals($controller, $router->getController($default_controller));

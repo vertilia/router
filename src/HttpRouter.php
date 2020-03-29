@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Vertilia\Router;
 
+use Vertilia\Parser\ParserInterface;
 use Vertilia\Request\HttpRequestInterface;
 use Vertilia\Router\MalformedRoutingTableException;
 
@@ -10,6 +11,8 @@ class HttpRouter implements RouterInterface
 {
     /** @var HttpRequestInterface */
     protected $request;
+    /** @var ParserInterface */
+    protected $parser;
     /** @var array */
     protected $routes = [];
 
@@ -21,9 +24,10 @@ class HttpRouter implements RouterInterface
      *  configuration files to load)
      * @throws MalformedRoutingTableException
      */
-    public function __construct(HttpRequestInterface $request, $routes_path = null)
+    public function __construct(HttpRequestInterface $request, ParserInterface $parser, $routes_path = null)
     {
         $this->request = $request;
+        $this->parser = $parser;
 
         // set routes
         if (isset($routes_path)) {
@@ -80,14 +84,14 @@ class HttpRouter implements RouterInterface
      * }
      * ...and the following in $routes.regex: {
      *  "GET application/json": {
-     *      "#^/v2/users-(?P<id>[^/]+)/friends$#": [
+     *      "#^/v1/users-(?P<id>.+)/friends$#": [
      *          "App\\UsersController",
      *          {"id": FILTER_VALIDATE_INT}
      *      ]
      *  },
      *  "GET": {
-     *      "#^/third/way/(?P<id>[^/]+)$#": "third\\way\\_id_",
-     *      "#^/v1/products/(?P<id>[^/]+)$#": "App\\ProductsController"
+     *      "#^/third/way/(?P<id>.+)$#": "third\\way\\_id_",
+     *      "#^/v1/products/(?P<id>.+)$#": "App\\ProductsController"
      *  }
      * }
      * @return RouterInterface
@@ -128,21 +132,15 @@ class HttpRouter implements RouterInterface
                 $method = 'GET';
             }
             $path_normalized = Fs::normalizePath($path);
-            $var = 0;
-            $pattern = '#^/'.\preg_replace(
-                '/\\\{([[:alpha:]_]\w*)\\\}/',
-                '(?P<$1>[^/]+)',
-                \preg_quote($path_normalized, '#'),
-                -1,
-                $var
-            ).'$#';
+            $pattern = $this->parser->getRegex("/$path_normalized");
+            $vars = $this->parser->getVars();
             $ctr = $controller
                 ?? ($path_normalized === ''
                     ? 'index'
                     : \preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
                 );
             $method_type = \rtrim("$method $type");
-            if ($var) {
+            if ($vars) {
                 $struct[$method_type]['regex'][$pattern] = isset($filters)
                     ? [$ctr, $filters]
                     : $ctr;
