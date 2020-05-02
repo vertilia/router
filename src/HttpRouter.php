@@ -100,6 +100,8 @@ class HttpRouter implements RouterInterface
     {
         $struct = [];
         foreach ($routes as $k => $v) {
+            $method = $path = $mime = null;
+            $path_mode = null;
             if (\is_string($v)) {
                 if (\is_string($k)) {
                     $route = $k;
@@ -111,41 +113,66 @@ class HttpRouter implements RouterInterface
                     $filters = null;
                 }
             } elseif (\is_array($v)) {
-                if (\is_string($k)) {
-                    $route = $k;
-                    $controller = $v['controller'] ?? null;
-                    $filters = $v['filters'] ?? null;
-                } else {
-                    $route = $v['route'] ?? null;
-                    $controller = $v['controller'] ?? null;
-                    $filters = $v['filters'] ?? null;
+                $route = \is_string($k)
+                    ? $k
+                    : ($v['route'] ?? null);
+                if (isset($v['path-static'])) {
+                    $path = $v['path-static'];
+                    $path_mode = 'path-static';
+                } elseif (isset($v['path-regex'])) {
+                    $path = $v['path-regex'];
+                    $path_mode = 'path-regex';
                 }
+                $method = $v['method'] ?? null;
+                $mime = $v['mime-type'] ?? null;
+                $controller = $v['controller'] ?? null;
+                $filters = $v['filters'] ?? null;
             } else {
                 $route = null;
                 $controller = null;
                 $filters = null;
             }
 
-            list($method, $path, $type) = \preg_split('/\s+/', $route, 3);
-            if (!isset($path)) {
-                $path = $method;
-                $method = 'GET';
+            if (isset($route)) {
+                list($method, $path, $mime) = \preg_split('/\s+/', $route, 3);
+                if (!isset($path)) {
+                    $path = $method;
+                    $method = 'GET';
+                }
+            } else {
+                if (empty($method)) {
+                    $method = 'GET';
+                }
             }
+
+            $method_type = \rtrim("$method $mime");
             $path_normalized = Fs::normalizePath($path);
-            $pattern = $this->parser->getRegex("/$path_normalized");
-            $vars = $this->parser->getVars();
             $ctr = $controller
                 ?? ($path_normalized === ''
                     ? 'index'
                     : \preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
                 );
-            $method_type = \rtrim("$method $type");
-            if ($vars) {
-                $struct[$method_type]['regex'][$pattern] = isset($filters)
-                    ? [$ctr, $filters]
-                    : $ctr;
-            } else {
-                $struct[$method_type]['static']["/$path_normalized"] = $ctr;
+
+            switch ($path_mode) {
+                case 'path-static':
+                    $struct[$method_type]['static']["/$path_normalized"] = $ctr;
+                    break;
+
+                case 'path-regex':
+                    $struct[$method_type]['regex'][$path] = isset($filters)
+                        ? [$controller, $filters]
+                        : $controller;
+                    break;
+
+                default:
+                    if (strpos($path_normalized, '{') === false) {
+                        $struct[$method_type]['static']["/$path_normalized"] = $ctr;
+                    } else {
+                        $pattern = $this->parser->getRegex("/$path_normalized");
+                        $struct[$method_type]['regex'][$pattern] = isset($filters)
+                            ? [$ctr, $filters]
+                            : $ctr;
+                    }
             }
         }
 
@@ -172,7 +199,13 @@ class HttpRouter implements RouterInterface
     {
         $method = $this->request->getMethod();
         $type = $this->request->getHeaders()['content-type'] ?? null;
-        $method_type = \rtrim("$method $type");
+        if ($type) {
+            $method_type = "$method $type";
+            $sources = [$method_type, $method];
+        } else {
+            $method_type = $method;
+            $sources = [$method];
+        }
 
         if (empty($this->routes) or ! \is_array($this->routes)) {
             return $default_controller;
@@ -191,7 +224,7 @@ class HttpRouter implements RouterInterface
         }
 
         // check regex paths in "METHOD TYPE" and "METHOD"
-        foreach ([$method_type, $method] as $m_t) {
+        foreach ($sources as $m_t) {
             if (isset($this->routes[$m_t]['regex'])) {
                 foreach ($this->routes[$m_t]['regex'] as $regex => $ctr_flt) {
                     $m = null;

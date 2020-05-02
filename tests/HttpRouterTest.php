@@ -58,7 +58,7 @@ class HttpRouterTest extends TestCase
     public function testHttpRouter($server, $get, $post, $cookie, $php_input, $controller, $default_controller, $args, $filters)
     {
         // new request
-        $request = new HttpRequest($server, $get, $post, $cookie, $php_input, $filters);
+        $request = new HttpRequest($server, $get, $post, $cookie, null, $php_input, $filters);
 
         // new OpenAPI parser
         $parser = new OpenApiParser();
@@ -148,6 +148,13 @@ class HttpRouterTest extends TestCase
 
             [['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/v1/orders', 'HTTP_CONTENT_TYPE' => 'application/json'],
                 null, null, null, null, 'OrdersJsonController', null, ['ver' => [1]], null],
+
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v1/avatars'],
+                null, null, null, null, 'AvatarsController', null, null, null],
+            [['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/v2/avatars', 'HTTP_CONTENT_TYPE' => 'application/json'],
+                null, null, null, null, 'AvatarsPostJsonController', null, ['ver' => 2], null],
+            [['REQUEST_METHOD' => 'PUT', 'REQUEST_URI' => '/v3/avatars'],
+                null, null, null, null, 'AvatarsPutController', null, ['ver' => 3], null],
         ];
     }
 }

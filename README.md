@@ -85,9 +85,11 @@ return [
 ```
 
 In the last route filters are provided not only for path parameter `id` but also for `description` and `image`
-parameters that may come from query, cookies or http headers.
+parameters that may come from other sources, like query, cookies, http body or headers.
 
-It is also possible to provide content type when defining the route, like in
+## Providing content MIME type
+
+It is also possible to provide content MIME type when defining the route, like in
 ```
 GET /products/{id} application/json
 ```
@@ -96,6 +98,50 @@ take precedence over generic routes, like in
 ```
 GET /products/{id}
 ```
+
+## Optimisation routes parsing
+
+When loading routing tables each route must be split to identify its method, path and MIME type (if present), then the
+path is analyzed to distinguish static paths from paths with variables, and then paths with variables are replaced by
+regular expressions allowing to recognise the path and catch variables values in one operation.
+
+This process is executed on each request, so when the number of routes is elevated, it may start to weight considerably
+on performance.
+
+We can bypass the process of parsing the route if we provide each route method, path and MIME type right in route
+description. This is possible with array-based form for route description and the following additional keys:
+- `"method"` - defines route method (GET if omitted)
+- `"path-static"` - defines route path as static (mutualy exclusive with `"path-regex"`)
+- `"path-regex"` - defines route path as regex (mutualy exclusive with `"path-static"`)
+- `"mime-type"` - defines request MIME type (any if omitted)
+
+When using this form of route description we cannot specify route as a key, since it will overwrite the value specified
+as `"path-static"` or `"path-regex"`.
+
+Example:
+
+```php
+<?php
+// etc/routes.php
+return [
+    // ...
+    [
+        'method' => 'GET',
+        'path-static' => '/products',
+        'controller'  => 'ProductsController',
+    ],
+    [
+        'path-regex' => '#^/products/(?P<id>.+)$#',
+        'mime-type'  => 'application/json',
+        'controller' => 'ProductsController',
+        'filters'    => ['id' => ['filter' => FILTER_VALIDATE_INT]],
+    ],
+];
+```
+
+Here we declare one static and one regex-based routes (similar to previous example but with addition of `"mime-type"`).
+Please note that regular expression uses specific notation to extract the variable name and value. They will be
+registered in HttpRequest object if corresponding filter is set.
 
 # Sample petstore.yaml specification
 
