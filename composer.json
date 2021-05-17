@@ -12,14 +12,17 @@
     }
   },
   "config": {
-    "optimize-autoloader": true
+    "optimize-autoloader": true,
+    "platform": {
+      "php": "7.4"
+    }
   },
   "require": {
-    "php": "^7.1",
+    "php": "^7.4",
     "vertilia/parser": "^1.0",
     "vertilia/request": "^1.3"
   },
-  "suggest": {
-    "phpunit/phpunit": "To run tests"
+  "require-dev": {
+    "phpunit/phpunit": "^9.5"
   }
 }

@@ -5,36 +5,35 @@ namespace Vertilia\Router;
 
 use Vertilia\Parser\ParserInterface;
 use Vertilia\Request\HttpRequestInterface;
-use Vertilia\Router\MalformedRoutingTableException;
 
 class HttpRouter implements RouterInterface
 {
     /** @var HttpRequestInterface */
-    protected $request;
+    protected HttpRequestInterface $request;
     /** @var ParserInterface */
-    protected $parser;
+    protected ParserInterface $parser;
     /** @var array */
-    protected $routes = [];
+    protected array $routes = [];
 
     /**
      * When array of files is provided, latter entries overwrite existing ones.
      *
      * @param HttpRequestInterface $request
-     * @param array|string $routes_path path to configuration file (or a list of
+     * @param ParserInterface $parser
+     * @param array|null $routes_path path to configuration file (or a list of
      *  configuration files to load)
-     * @throws MalformedRoutingTableException
      */
-    public function __construct(HttpRequestInterface $request, ParserInterface $parser, $routes_path = null)
+    public function __construct(HttpRequestInterface $request, ParserInterface $parser, array $routes_path = null)
     {
         $this->request = $request;
         $this->parser = $parser;
 
         // set routes
         if (isset($routes_path)) {
-            foreach ((array) $routes_path as $file) {
+            foreach ($routes_path as $file) {
                 $routes = include $file;
-                if (!\is_array($routes)) {
-                    throw new MalformedRoutingTableException(\sprintf(
+                if (!is_array($routes)) {
+                    throw new MalformedRoutingTableException(sprintf(
                         'Routing table in %s must return an array',
                         $file
                     ));
@@ -102,8 +101,8 @@ class HttpRouter implements RouterInterface
         foreach ($routes as $k => $v) {
             $method = $path = $mime = null;
             $path_mode = null;
-            if (\is_string($v)) {
-                if (\is_string($k)) {
+            if (is_string($v)) {
+                if (is_string($k)) {
                     $route = $k;
                     $controller = $v;
                     $filters = null;
@@ -112,8 +111,8 @@ class HttpRouter implements RouterInterface
                     $controller = null;
                     $filters = null;
                 }
-            } elseif (\is_array($v)) {
-                $route = \is_string($k)
+            } elseif (is_array($v)) {
+                $route = is_string($k)
                     ? $k
                     : ($v['route'] ?? null);
                 if (isset($v['path-static'])) {
@@ -134,7 +133,7 @@ class HttpRouter implements RouterInterface
             }
 
             if (isset($route)) {
-                list($method, $path, $mime) = \preg_split('/\s+/', $route, 3);
+                list($method, $path, $mime) = preg_split('/\s+/', $route, 3);
                 if (!isset($path)) {
                     $path = $method;
                     $method = 'GET';
@@ -145,12 +144,12 @@ class HttpRouter implements RouterInterface
                 }
             }
 
-            $method_type = \rtrim("$method $mime");
+            $method_type = rtrim("$method $mime");
             $path_normalized = Fs::normalizePath($path);
             $ctr = $controller
                 ?? ($path_normalized === ''
                     ? 'index'
-                    : \preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
+                    : preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
                 );
 
             switch ($path_mode) {
@@ -176,7 +175,7 @@ class HttpRouter implements RouterInterface
             }
         }
 
-        $this->routes = \array_replace_recursive($this->routes, $struct);
+        $this->routes = array_replace_recursive($this->routes, $struct);
 
         return $this;
     }
@@ -190,12 +189,12 @@ class HttpRouter implements RouterInterface
      * If filters were not provided, path parameters will be added to request
      * only if request already contains corresponding filters.
      *
-     * If route wasnot identified, default controller is returned.
+     * If route was not identified, default controller is returned.
      *
-     * @param string $default_controller
+     * @param string|null $default_controller
      * @return string
      */
-    public function getController(string $default_controller = null)
+    public function getController(string $default_controller = null): ?string
     {
         $method = $this->request->getMethod();
         $type = $this->request->getHeaders()['content-type'] ?? null;
@@ -207,7 +206,7 @@ class HttpRouter implements RouterInterface
             $sources = [$method];
         }
 
-        if (empty($this->routes) or ! \is_array($this->routes)) {
+        if (empty($this->routes) or ! is_array($this->routes)) {
             return $default_controller;
         } elseif (empty($this->routes[$method_type]) and empty($this->routes[$method])) {
             return $default_controller;
@@ -228,8 +227,8 @@ class HttpRouter implements RouterInterface
             if (isset($this->routes[$m_t]['regex'])) {
                 foreach ($this->routes[$m_t]['regex'] as $regex => $ctr_flt) {
                     $m = null;
-                    if (\preg_match($regex, $path_normalized, $m)) {
-                        if (\is_array($ctr_flt)) {
+                    if (preg_match($regex, $path_normalized, $m)) {
+                        if (is_array($ctr_flt)) {
                             list ($controller, $filters) = $ctr_flt;
                             if ($filters) {
                                 $this->request->addFilters($filters);
@@ -239,7 +238,7 @@ class HttpRouter implements RouterInterface
                         }
 
                         foreach ($m as $k => $v) {
-                            if (\is_string($k)) {
+                            if (is_string($k)) {
                                 $this->request[$k] = $v;
                             }
                         }

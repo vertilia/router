@@ -5,7 +5,7 @@ namespace Vertilia\Router;
 use PHPUnit\Framework\TestCase;
 
 /**
- * @coversDefaultClass \Vertilia\Kit\Utils\Fs
+ * @coversDefaultClass Fs
  */
 class FsTest extends TestCase
 {
@@ -19,7 +19,7 @@ class FsTest extends TestCase
     }
 
     /** data provider */
-    public function normalizePathProvider()
+    public function normalizePathProvider(): array
     {
         return [
             ['/', ''],

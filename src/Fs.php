@@ -20,19 +20,19 @@ class Fs
      * @assert('/etc/hosts') = 'etc/hosts'
      * @assert('.././/tmp/../home//admin/./.ssh') = 'home/admin/.ssh'
      */
-    public static function normalizePath(string $path = null): string
+    public static function normalizePath(string $path = ''): string
     {
         $dirs = [];
-        foreach (\explode('/', $path === null ? '' : $path) as $d) {
-            if (\strlen($d) and $d != '.') {
+        foreach (explode('/', $path) as $d) {
+            if (strlen($d) and $d != '.') {
                 if ($d == '..') {
-                    \array_pop($dirs);
+                    array_pop($dirs);
                 } else {
                     $dirs[] = $d;
                 }
             }
         }
 
-        return \implode('/', $dirs);
+        return implode('/', $dirs);
     }
 }
