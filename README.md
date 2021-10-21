@@ -99,7 +99,7 @@ take precedence over generic routes, like in
 GET /products/{id}
 ```
 
-## Optimisation routes parsing
+## Optimisation of routes parsing
 
 When loading routing tables each route must be split to identify its method, path and MIME type (if present), then the
 path is analyzed to distinguish static paths from paths with variables, and then paths with variables are replaced by
@@ -142,6 +142,72 @@ return [
 Here we declare one static and one regex-based routes (similar to previous example but with addition of `"mime-type"`).
 Please note that regular expression uses specific notation to extract the variable name and value. They will be
 registered in HttpRequest object if corresponding filter is set.
+
+### Going faster!
+
+To go even faster, we can completely bypass the parsing stage on each request with the following techniques:
+
+- write a simple script that adds all your known routes to the Router class
+- get parsed routes with `getParsedRoutes()`
+- export this structure to the `.php` file with `var_export()`
+- on each request just include this file and sent its contents to `setParsedRoutes()` to avoid the parsing phase
+
+Example:
+
+```php
+<?php // bin/routes-generator.php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Vertilia\Request\HttpRequest;
+use Vertilia\Parser\OpenApiParser;
+
+// instantiate HttpRouter and parse routes from etc/http-routes.php
+$router = new HttpRouter(
+    new HttpRequest([]),
+    new OpenApiParser(),
+    [__DIR__.'/../etc/http-routes.php']
+);
+
+// receive the routing structure for all parsed routes
+$routes_struct = $router->getParsedRoutes();
+
+// store this structure in cache/http-routes-generated.php
+file_put_contents(
+    __DIR__ . '/../cache/http-routes-generated.php',
+    "<?php return " . var_export($routes_struct) . ";"
+);
+```
+
+```php
+<?php // www/index.php
+
+require __DIR__ . '/../vendor/autoload.php';
+
+use Vertilia\Request\HttpRequest;
+use Vertilia\Parser\OpenApiParser;
+
+// create HttpRequest object from current environment
+$request = new HttpRequest($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES, file_get_contents('php://input'));
+
+// instantiate HttpRouter without parsing
+$router = new HttpRouter(
+    $request,
+    new OpenApiParser()
+);
+
+// set preparsed routes
+$router->setParsedRoutes(include __DIR__ . '/../cache/http-routes-generated.php');
+
+// set filtered variables in request and get controller name from the router using IndexController as default
+$controller_name = 'App\\Controller\\' . $router->getController('IndexController');
+
+// instantiate controller with request
+$controller = new $controller_name($request);
+
+// let controller do its work and output corresponding response
+$controller->processRequest();
+```
 
 # Sample petstore.yaml specification
 
