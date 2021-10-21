@@ -16,7 +16,7 @@ class HttpRouter implements RouterInterface
     protected array $routes = [];
 
     /**
-     * When array of files is provided, latter entries overwrite existing ones.
+     * When array of files is provided, latter entries overwrite existing ones
      *
      * @param HttpRequestInterface $request
      * @param ParserInterface $parser
@@ -39,7 +39,7 @@ class HttpRouter implements RouterInterface
                     ));
                 }
 
-                $this->addRoutes($routes);
+                $this->parseRoutes($routes);
             }
         }
     }
@@ -56,10 +56,10 @@ class HttpRouter implements RouterInterface
      *  - {"METHOD URI CONTENT-TYPE": {controller: "CONTROLLER", filters: {FILTERS}}, ...}
      *  - [{route: "METHOD URI CONTENT-TYPE", controller: "CONTROLLER", filters: {FILTERS}}, ...]
      *
-     * Regex version is used when {var-name} parameters are provided in path.
+     * Regex version is used when {var-name} parameters are provided in path
      *
      * If controller name is not prodided, it is considered to be the path with
-     * forward slashes translated to back slashes to separate namespaces.
+     * forward slashes translated to back slashes to separate namespaces
      *
      * Filters will be registered for each regex-path where they are provided
      *
@@ -95,7 +95,7 @@ class HttpRouter implements RouterInterface
      * }
      * @return RouterInterface
      */
-    public function addRoutes(array $routes): RouterInterface
+    public function parseRoutes(array $routes): RouterInterface
     {
         $struct = [];
         foreach ($routes as $k => $v) {
@@ -189,16 +189,29 @@ class HttpRouter implements RouterInterface
         return $this;
     }
 
+    /** @inheritDoc */
+    public function getParsedRoutes(): array
+    {
+        return $this->routes;
+    }
+
+    /** @inheritDoc */
+    public function setParsedRoutes(array $parsed_routes): self
+    {
+        $this->routes = $parsed_routes;
+        return $this;
+    }
+
     /**
-     * Returns controller matching current request for the routing table.
+     * Returns controller matching current request for the routing table
      *
      * If filters were provided for the identified route they will be added to
-     * request before registering path parameters.
+     * request before registering path parameters
      *
      * If filters were not provided, path parameters will be added to request
-     * only if request already contains corresponding filters.
+     * only if request already contains corresponding filters
      *
-     * If route was not identified, default controller is returned.
+     * If route was not identified, default controller is returned
      *
      * @param string|null $default_controller
      * @return string

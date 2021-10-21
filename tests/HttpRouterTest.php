@@ -15,7 +15,7 @@ class HttpRouterTest extends TestCase
      * Test different instantiation methods.
      *
      * @covers ::__construct
-     * @covers ::addRoutes
+     * @covers ::parseRoutes
      */
     public function testHttpRouterConstructor()
     {
@@ -31,15 +31,16 @@ class HttpRouterTest extends TestCase
 
         // router table from setter
         $router2 = new HttpRouter($request, $parser);
-        $router2->addRoutes(include __DIR__.'/http-routes.php');
+        $router2->parseRoutes(include __DIR__.'/http-routes.php');
         $this->assertInstanceOf(RouterInterface::class, $router2);
     }
 
     /**
      * @dataProvider httpRouterProvider
      * @covers ::__construct
-     * @covers ::parseRoute
-     * @covers ::getResponseController
+     * @covers ::getParsedRoutes
+     * @covers ::setParsedRoutes
+     * @covers ::getController
      * @param array $server
      * @param array $get
      * @param array $post
@@ -58,8 +59,8 @@ class HttpRouterTest extends TestCase
         // new OpenAPI parser
         $parser = new OpenApiParser();
 
-        // router table within constructor
-        $router = new HttpRouter($request, $parser, [__DIR__ . '/http-routes.php']);
+        $routes = (new HttpRouter($request, $parser, [__DIR__ . '/http-routes.php']))->getParsedRoutes();
+        $router = (new HttpRouter($request, $parser))->setParsedRoutes($routes);
 
         // check controller
         $this->assertEquals($controller, $router->getController($default_controller));
