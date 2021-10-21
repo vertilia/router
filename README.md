@@ -152,6 +152,10 @@ To go even faster, we can completely bypass the parsing stage on each request wi
 - export this structure to the `.php` file with `var_export()`
 - on each request just include this file and sent its contents to `setParsedRoutes()` to avoid the parsing phase
 
+IMPORTANT: please remember, php constants that you may use to define input parameters filters (like
+`FILTER_VALIDATE_INT`, `FILTER_FLAG_HOST_REQUIRED` etc.) may change their numeric value from version to version, so try
+to generate the exported routes file with the same version that will be used with `setParsedRoutes()` call.
+
 Example:
 
 ```php
@@ -161,12 +165,13 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Vertilia\Request\HttpRequest;
 use Vertilia\Parser\OpenApiParser;
+use Vertilia\Router\HttpRouter;
 
-// instantiate HttpRouter and parse routes from etc/http-routes.php
+// instantiate HttpRouter and parse routes from etc/routes.php
 $router = new HttpRouter(
     new HttpRequest([]),
     new OpenApiParser(),
-    [__DIR__.'/../etc/http-routes.php']
+    [__DIR__.'/../etc/routes.php']
 );
 
 // receive the routing structure for all parsed routes
@@ -175,7 +180,7 @@ $routes_struct = $router->getParsedRoutes();
 // store this structure in cache/http-routes-generated.php
 file_put_contents(
     __DIR__ . '/../cache/http-routes-generated.php',
-    "<?php return " . var_export($routes_struct) . ";"
+    "<?php return " . var_export($routes_struct, true) . ";"
 );
 ```
 
@@ -186,6 +191,7 @@ require __DIR__ . '/../vendor/autoload.php';
 
 use Vertilia\Request\HttpRequest;
 use Vertilia\Parser\OpenApiParser;
+use Vertilia\Router\HttpRouter;
 
 // create HttpRequest object from current environment
 $request = new HttpRequest($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES, file_get_contents('php://input'));
