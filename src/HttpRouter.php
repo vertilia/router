@@ -133,10 +133,19 @@ class HttpRouter implements RouterInterface
             }
 
             if (isset($route)) {
-                list($method, $path, $mime) = preg_split('/\s+/', $route, 3);
-                if (!isset($path)) {
-                    $path = $method;
-                    $method = 'GET';
+                $parts = preg_split('/\s+/', $route, 3);
+                switch (count($parts)) {
+                    case 1:
+                        $path = $method;
+                        $method = 'GET';
+                        $mime = null;
+                        break;
+                    case 2:
+                        list($method, $path) = $parts;
+                        $mime = null;
+                        break;
+                    default:
+                        list($method, $path, $mime) = $parts;
                 }
             } else {
                 if (empty($method)) {

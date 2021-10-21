@@ -16,7 +16,6 @@ class HttpRouterTest extends TestCase
      *
      * @covers ::__construct
      * @covers ::addRoutes
-     * @param type $param
      */
     public function testHttpRouterConstructor()
     {
@@ -30,14 +29,10 @@ class HttpRouterTest extends TestCase
         $router1 = new HttpRouter($request, $parser, [__DIR__.'/http-routes.php']);
         $this->assertInstanceOf(RouterInterface::class, $router1);
 
-        // router table within constructor as string
-        $router2 = new HttpRouter($request, $parser, __DIR__.'/http-routes.php');
-        $this->assertInstanceOf(RouterInterface::class, $router2);
-
         // router table from setter
-        $router3 = new HttpRouter($request, $parser);
-        $router3->addRoutes(include __DIR__.'/http-routes.php');
-        $this->assertInstanceOf(RouterInterface::class, $router3);
+        $router2 = new HttpRouter($request, $parser);
+        $router2->addRoutes(include __DIR__.'/http-routes.php');
+        $this->assertInstanceOf(RouterInterface::class, $router2);
     }
 
     /**
@@ -58,13 +53,13 @@ class HttpRouterTest extends TestCase
     public function testHttpRouter($server, $get, $post, $cookie, $php_input, $controller, $default_controller, $args, $filters)
     {
         // new request
-        $request = new HttpRequest($server, $get, $post, $cookie, null, $php_input, $filters);
+        $request = new HttpRequest($server?:[], $get, $post, $cookie, null, $php_input, $filters);
 
         // new OpenAPI parser
         $parser = new OpenApiParser();
 
         // router table within constructor
-        $router = new HttpRouter($request, $parser, __DIR__ . '/http-routes.php');
+        $router = new HttpRouter($request, $parser, [__DIR__ . '/http-routes.php']);
 
         // check controller
         $this->assertEquals($controller, $router->getController($default_controller));
@@ -72,7 +67,7 @@ class HttpRouterTest extends TestCase
         // check arguments
         if (isset($args)) {
             foreach ($args as $k => $v) {
-                $this->assertTrue($v === $request[$k]);
+                $this->assertTrue($v === ($request[$k] ?? null));
             }
         }
     }
@@ -80,14 +75,11 @@ class HttpRouterTest extends TestCase
     /** data provider */
     public function httpRouterProvider()
     {
-        // method, path,
-        //  content_type, request, php_input | controller, default_controller, args
-
         // [server],
-        //  get, post, cookie, php_input | controller, default_controller, args
+        //  get, post, cookie, php_input | controller, default_controller, args, filters
         return [
-//            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_CONTENT_TYPE' => null],
-//                null, null, null, null, 'IndexController', null, null, null],
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/', 'HTTP_CONTENT_TYPE' => null],
+                null, null, null, null, 'index', null, null, null],
 
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v1///users//./q', 'HTTP_CONTENT_TYPE' => null],
                 null, null, null, null, 'UsersController', null, null, null],
