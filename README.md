@@ -1,7 +1,7 @@
 # router
 
-A simple and efficient router library, allowing translation of request path into controller name and discovery of path
-parameters as defined in [OpenAPI specification](http://spec.openapis.org/oas/v3.0.2#patterned-fields).
+A simple and efficient http routing library, allowing translation of request path into controller name and discovery of
+path parameters as defined in [OpenAPI specification](http://spec.openapis.org/oas/v3.0.2#patterned-fields).
 
 Use of [`ValidArray`](https://github.com/vertilia/valid-array)-based `HttpRequestInterface` allows for automatic
 registration and validation of path parameters inside the request and later array-based access as in
@@ -12,13 +12,15 @@ High efficiency of filtering mechanism is backed by php-native [`filter` extensi
 # Usage
 
 When instantiating your router you need to pass the [`HttpRequestInterface`](https://github.com/vertilia/request)
-request object (representing current request) and a list of routing files.
+request object (representing current request), the [`HttpParserInterface`](https://github.com/vertilia/parser) parser
+object (which will translate the routes to regexps) and a list of routing files.
 
 ```php
 <?php
 // public/index.php
-$request = new Vertilia\Request\HttpRequest($_SERVER, $_GET, $_POST, $_COOKIE);
-$router = new Vertilia\Router\HttpRouter($request, [__DIR__ . '/../etc/routes.php']);
+$request = new Vertilia\Request\HttpRequest($_SERVER);
+$parser = new Vertilia\Parser\OpenApiParser();
+$router = new Vertilia\Router\HttpRouter($request, $parser, [__DIR__ . '/../etc/routes.php']);
 ```
 
 Each routing file is a valid php script returning an array with routing information, where each entry specifies
@@ -115,8 +117,8 @@ description. This is possible with array-based form for route description and th
 - `"path-regex"` - defines route path as regex (mutualy exclusive with `"path-static"`)
 - `"mime-type"` - defines request MIME type (any if omitted)
 
-When using this form of route description we cannot specify route as a key, since it will overwrite the value specified
-as `"path-static"` or `"path-regex"`.
+**IMPORTANT** When using this form of route description we cannot specify route as a key, since in this case it will
+overwrite the value specified as `"path-static"` or `"path-regex"`.
 
 Example:
 
@@ -150,21 +152,19 @@ To go even faster, we can completely bypass the parsing stage on each request wi
 - write a simple script that adds all your known routes to the Router class
 - get parsed routes with `getParsedRoutes()`
 - export this structure to the `.php` file with `var_export()`
-- on each request just include this file and sent its contents to `setParsedRoutes()` to avoid the parsing phase
+- on each request include this file and send its contents to `setParsedRoutes()` to bypass the parsing phase
 
-IMPORTANT: please remember, php constants that you may use to define input parameters filters (like
-`FILTER_VALIDATE_INT`, `FILTER_FLAG_HOST_REQUIRED` etc.) may change their numeric value from version to version, so try
-to generate the exported routes file with the same version that will be used with `setParsedRoutes()` call.
+### Example
 
-Example:
+This script needs to be executed once to translate `/etc/routes.php` file into `/cache/http-routes-generated.php`:
 
 ```php
 <?php // bin/routes-generator.php
 
 require __DIR__ . '/../vendor/autoload.php';
 
-use Vertilia\Request\HttpRequest;
 use Vertilia\Parser\OpenApiParser;
+use Vertilia\Request\HttpRequest;
 use Vertilia\Router\HttpRouter;
 
 // instantiate HttpRouter and parse routes from etc/routes.php
@@ -184,28 +184,35 @@ file_put_contents(
 );
 ```
 
+On each request we don't need to parse the whole list of routes since we use already cached structure from
+`/cache/http-routes-generated.php`:
+
 ```php
 <?php // www/index.php
 
 require __DIR__ . '/../vendor/autoload.php';
 
 use Vertilia\Request\HttpRequest;
-use Vertilia\Parser\OpenApiParser;
 use Vertilia\Router\HttpRouter;
 
 // create HttpRequest object from current environment
-$request = new HttpRequest($_SERVER, $_GET, $_POST, $_COOKIE, $_FILES, file_get_contents('php://input'));
+$request = new HttpRequest(
+    $_SERVER,
+    $_GET,
+    $_POST,
+    $_COOKIE,
+    $_FILES,
+    file_get_contents('php://input')
+);
 
 // instantiate HttpRouter without parsing
-$router = new HttpRouter(
-    $request,
-    new OpenApiParser()
-);
+$router = new HttpRouter($request);
 
 // set preparsed routes
 $router->setParsedRoutes(include __DIR__ . '/../cache/http-routes-generated.php');
 
-// set filtered variables in request and get controller name from the router using IndexController as default
+// set filtered variables in request and get controller name from the router
+// using IndexController as default
 $controller_name = 'App\\Controller\\' . $router->getController('IndexController');
 
 // instantiate controller with request
@@ -215,9 +222,20 @@ $controller = new $controller_name($request);
 $controller->processRequest();
 ```
 
+**IMPORTANT** Please be aware about the following specialties when going this way:
+
+1. PHP constants that you may use to define input filters (like `FILTER_VALIDATE_INT`, `FILTER_FLAG_HOST_REQUIRED` etc.)
+will be exported as their numeric values. These values may change from version to version of PHP binary, so try to
+generate the exported routes file using the same version that will be used with `setParsedRoutes()` call. Otherwise, you
+can review the generated file (manually or with additional scripting) and replace numeric values of `filters` entries
+with corresponding constants from initial routes file.
+
+2. Also, if you use validation callbacks in `filters`, they will not be exported, and you'll need to copy these
+callbacks from initial routes file.
+
 # Sample petstore.yaml specification
 
-API specification file is vailable from
+API specification file for this example is vailable from
 [OpenAPI](https://github.com/OAI/OpenAPI-Specification/blob/master/examples/v3.0/petstore-expanded.yaml) github
 repository.
 

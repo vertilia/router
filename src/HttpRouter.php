@@ -19,14 +19,14 @@ class HttpRouter implements RouterInterface
      * When array of files is provided, latter entries overwrite existing ones
      *
      * @param HttpRequestInterface $request
-     * @param ParserInterface $parser
+     * @param ParserInterface|null $parser
      * @param array|null $routes_path path to configuration file (or a list of
      *  configuration files to load)
      */
-    public function __construct(HttpRequestInterface $request, ParserInterface $parser, array $routes_path = null)
+    public function __construct(HttpRequestInterface $request, ParserInterface $parser = null, array $routes_path = null)
     {
         $this->request = $request;
-        $this->parser = $parser;
+        isset($parser) and $this->parser = $parser;
 
         // set routes
         if (isset($routes_path)) {
@@ -105,12 +105,11 @@ class HttpRouter implements RouterInterface
                 if (is_string($k)) {
                     $route = $k;
                     $controller = $v;
-                    $filters = null;
                 } else {
                     $route = $v;
                     $controller = null;
-                    $filters = null;
                 }
+                $filters = null;
             } elseif (is_array($v)) {
                 $route = is_string($k)
                     ? $k
@@ -175,7 +174,7 @@ class HttpRouter implements RouterInterface
                 default:
                     if (strpos($path_normalized, '{') === false) {
                         $struct[$method_type]['static']["/$path_normalized"] = $ctr;
-                    } else {
+                    } elseif (isset($this->parser)) {
                         $pattern = $this->parser->getRegex("/$path_normalized");
                         $struct[$method_type]['regex'][$pattern] = isset($filters)
                             ? [$ctr, $filters]
