@@ -41,11 +41,11 @@ class HttpRouterTest extends TestCase
      * @covers ::getParsedRoutes
      * @covers ::setParsedRoutes
      * @covers ::getController
-     * @param array $server
-     * @param array $get
-     * @param array $post
-     * @param array $cookie
-     * @param string $php_input
+     * @param ?array $server
+     * @param ?array $get
+     * @param ?array $post
+     * @param ?array $cookie
+     * @param ?string $php_input
      * @param string $controller
      * @param string $default_controller
      * @param array $args
@@ -74,7 +74,7 @@ class HttpRouterTest extends TestCase
     }
 
     /** data provider */
-    public function httpRouterProvider()
+    public function httpRouterProvider(): array
     {
         // [server],
         //  get, post, cookie, php_input | controller, default_controller, args, filters

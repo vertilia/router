@@ -19,6 +19,8 @@
   },
   "require": {
     "php": "^7.4",
+    "ext-json": "*",
+    "vertilia/filesystem": "^1.0",
     "vertilia/parser": "^1.0",
     "vertilia/request": "^1.3"
   },

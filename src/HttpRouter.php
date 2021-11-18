@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Vertilia\Router;
 
+use Vertilia\Filesystem\Filesystem;
 use Vertilia\Parser\ParserInterface;
 use Vertilia\Request\HttpRequestInterface;
 
@@ -58,7 +59,7 @@ class HttpRouter implements RouterInterface
      *
      * Regex version is used when {var-name} parameters are provided in path
      *
-     * If controller name is not prodided, it is considered to be the path with
+     * If controller name is not provided, it is considered to be the path with
      * forward slashes translated to back slashes to separate namespaces
      *
      * Filters will be registered for each regex-path where they are provided
@@ -153,7 +154,7 @@ class HttpRouter implements RouterInterface
             }
 
             $method_type = rtrim("$method $mime");
-            $path_normalized = Fs::normalizePath($path);
+            $path_normalized = Filesystem::normalizePath($path);
             $ctr = $controller
                 ?? ($path_normalized === ''
                     ? 'index'
@@ -233,7 +234,7 @@ class HttpRouter implements RouterInterface
             return $default_controller;
         }
 
-        $path_normalized = '/' . Fs::normalizePath($this->request->getPath());
+        $path_normalized = '/' . Filesystem::normalizePath($this->request->getPath());
 
         // check static path in "METHOD TYPE"
         if (isset($this->routes[$method_type]['static'][$path_normalized])) {
