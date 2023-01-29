@@ -11,20 +11,14 @@
       "Vertilia\\Router\\": "src/"
     }
   },
-  "config": {
-    "optimize-autoloader": true,
-    "platform": {
-      "php": "7.4"
-    }
-  },
   "require": {
-    "php": "^7.4",
+    "php": ">=7.4",
     "ext-json": "*",
     "vertilia/filesystem": "^1.0",
     "vertilia/parser": "^1.0",
     "vertilia/request": "^1.3"
   },
   "require-dev": {
-    "phpunit/phpunit": "^9.5"
+    "phpunit/phpunit": "*"
   }
 }
