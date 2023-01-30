@@ -46,6 +46,22 @@ class HttpRouter implements RouterInterface
     }
 
     /**
+     * @return HttpRequestInterface
+     */
+    public function getRequest(): HttpRequestInterface
+    {
+        return $this->request;
+    }
+
+    /**
+     * @return ParserInterface
+     */
+    public function getParser(): ParserInterface
+    {
+        return $this->parser;
+    }
+
+    /**
      * Receives list of routes in one of recognized formats, then converts and
      * registers the internal version in $routes in the following format:
      * $routes.static: {"METHOD CONTENT-TYPE": {"URI": "CONTROLLER_NAME", ...}, ...} or
@@ -60,7 +76,7 @@ class HttpRouter implements RouterInterface
      * Regex version is used when {var-name} parameters are provided in path
      *
      * If controller name is not provided, it is considered to be the path with
-     * forward slashes translated to back slashes to separate namespaces
+     * forward slashes translated to backslashes to separate namespaces
      *
      * Filters will be registered for each regex-path where they are provided
      *
