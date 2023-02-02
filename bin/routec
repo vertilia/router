@@ -1,7 +1,9 @@
 #!/usr/local/bin/php
 <?php
 
-require __DIR__ . '/../vendor/autoload.php';
+require file_exists(__DIR__ . '/../../../autoload.php')
+    ? (__DIR__ . '/../../../autoload.php')
+    : (__DIR__ . '/../vendor/autoload.php');
 
 use Vertilia\Parser\OpenApiParser;
 use Vertilia\Request\HttpRequest;
