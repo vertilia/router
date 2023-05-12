@@ -77,13 +77,13 @@ $flag_name = [
     FILTER_FLAG_EMAIL_UNICODE => 'FILTER_FLAG_EMAIL_UNICODE',
     268435456 => 'FILTER_FLAG_GLOBAL_RANGE',
 ];
-foreach (explode("\n", var_export($router->getParsedRoutes(), true)) as $line) {
+foreach (explode("\n", var_export($router->getParsedRoutes(), true) . ";") as $line) {
     // if line contains 'filter'
     $line1 = preg_replace_callback(
         "/^(\\s+)'([^ ]+)' => (\\d+),\$/",
         function ($m) use ($filter_name) {
             return isset($filter_name[$m[3]])
-                ? sprintf("%s'%s' => %s", $m[1], $m[2], $filter_name[$m[3]])
+                ? sprintf("%s'%s' => %s,", $m[1], $m[2], $filter_name[$m[3]])
                 : $m[0];
         },
         $line
@@ -93,7 +93,7 @@ foreach (explode("\n", var_export($router->getParsedRoutes(), true)) as $line) {
         "/^(\\s+)'flags' => (\\d+),\$/",
         function ($m) use ($flag_name) {
             if (isset($flag_name[$m[2]])) {
-                return sprintf("%s'flags' => %s", $m[1], $flag_name[$m[2]]);
+                return sprintf("%s'flags' => %s,", $m[1], $flag_name[$m[2]]);
             } else {
                 $f = [];
                 $i = (int)$m[2];
@@ -103,7 +103,7 @@ foreach (explode("\n", var_export($router->getParsedRoutes(), true)) as $line) {
                     }
                 }
                 return $f
-                    ? sprintf("%s'flags' => %s", $m[1], implode(' | ', $f))
+                    ? sprintf("%s'flags' => %s,", $m[1], implode(' | ', $f))
                     : $m[0];
             }
         },
@@ -111,4 +111,3 @@ foreach (explode("\n", var_export($router->getParsedRoutes(), true)) as $line) {
     );
     echo $line2, "\n";
 }
-echo ";\n";
