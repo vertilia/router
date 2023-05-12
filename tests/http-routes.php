@@ -1,15 +1,16 @@
 <?php
 
 return [
-    // path-only values, controller from path
-    'GET /',
-    'GET /api/contracts',
-    'GET /--api--/--contracts--/--',
-    'DELETE /api/contracts/{id}',
-    'GET /api/users--up/{id}/some.controller',
-    'GET /{o}.{n}.{c}.{e}.../--users-{id}-down--/--{ver}.controller--',
+    // static path => controller as value
+    '/' => 'Index',
+    'GET /api/contracts' => 'Api\\Contracts',
+    'GET /--api--/--contracts--/-- text/html' => 'Api\\Contracts',
 
-    // path in keys => controller in values
+    // path with params => controller as value (default filter)
+    'DELETE /api/contracts/{id}' => 'Api\\Contracts\\Id',
+    'GET /api/users--up/{id}/some.controller' => 'Api\\UsersUp\\Id\\SomeController',
+    'GET /{o}.{n}.{c}.{e}.../--users-{id}-down--/--{ver}.controller--' => 'ONCE\\UsersIdDown\\VerController',
+
     'GET /{ver}/products' => 'ProductsController',
     'GET /{ver}/products/{id}' => 'ProductsController',
     'POST /{ver}/products/{id}' => 'ProductsController',
@@ -19,7 +20,7 @@ return [
 
     'GET /{ver}/users/{id}' => 'UsersController',
 
-    // path in keys => controller and filters in array
+    // path with params => controller and filters in array
     'GET /v{ver}/orders/{id}' => [
         'controller' => 'OrdersController',
         'filters' => [
@@ -27,35 +28,59 @@ return [
         ],
     ],
 
-    // route, controller and filters in array
-    [
-        'route' => 'POST /v{ver}/orders/',
+    // path with params => filters with regexp
+    'GET /users/{uuid}' => [
+        'controller' => 'UsersUuidController',
+        'filters' => [
+            'uuid' => [
+                'filter' => FILTER_VALIDATE_REGEXP,
+                'options' => [
+                    'regexp' => '/^[[:xdigit:]]{8}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{4}-[[:xdigit:]]{12}$/',
+                ],
+            ],
+        ],
+    ],
+
+    // MIME-TYPE empty vs set
+    'POST /v{ver}/orders/' => [
         'controller' => 'OrdersController',
         'filters' => ['ver' => ['filter' => FILTER_VALIDATE_INT, 'flags' => FILTER_FORCE_ARRAY]],
     ],
 
-    // route, controller and filters in array
-    [
-        'route' => 'POST /v{ver}/orders/ application/json',
+    // MIME-TYPE empty vs set
+    'POST /v{ver}/orders/ application/json' => [
         'controller' => 'OrdersJsonController',
         'filters' => ['ver' => ['filter' => FILTER_VALIDATE_INT, 'flags' => FILTER_FORCE_ARRAY]],
     ],
 
-    // method, path, mime-type, controller and filters in array
-    [
-        // methot GET by default if omitted
-        'path-static' => '/v1/avatars/',
+    // static vs dynamic with mime vs dynamic without mime
+    '/v1/avatars/' => [
+        // method GET by default if omitted
         'controller' => 'AvatarsController',
     ],
-    'POST /v{ver}/avatars/' => [
-        'mime-type' => 'application/json',
-        'controller' => 'AvatarsPostJsonController',
+    'GET /v{ver}/avatars/ application/json' => [
+        'controller' => 'AvatarsGetJsonController',
         'filters' => ['ver' => FILTER_VALIDATE_INT],
     ],
-    [
-        'method' => 'PUT',
-        'path-regex' => '#^/v(?P<ver>.+)/avatars$#',
+    'GET /v{ver}/avatars' => [
+        'controller' => 'AvatarsGetController',
+        'filters' => ['ver' => FILTER_VALIDATE_INT],
+    ],
+    'PUT /v{ver}/avatars' => [
         'controller' => 'AvatarsPutController',
         'filters' => ['ver' => FILTER_VALIDATE_INT],
     ],
+
+    // callback to split parameter on array and only keep integer values
+    'GET /products/{id_list}' => [
+        'controller' => 'ProductsListController',
+        'filters' => [
+            'id_list' => [
+                'filter' => FILTER_CALLBACK,
+                'options' => function ($v) {
+                    return array_values(array_map('intval', array_filter(explode(',', $v), 'is_numeric'))) ?: false;
+                },
+            ],
+        ],
+    ]
 ];

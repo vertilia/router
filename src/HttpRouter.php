@@ -9,25 +9,21 @@ use Vertilia\Request\HttpRequestInterface;
 
 class HttpRouter implements RouterInterface
 {
-    /** @var HttpRequestInterface */
     protected HttpRequestInterface $request;
-    /** @var ParserInterface */
-    protected ParserInterface $parser;
-    /** @var array */
+    protected ?ParserInterface $parser;
     protected array $routes = [];
 
     /**
      * When array of files is provided, latter entries overwrite existing ones
      *
      * @param HttpRequestInterface $request
-     * @param ParserInterface|null $parser
-     * @param array|null $routes_path path to configuration file (or a list of
-     *  configuration files to load)
+     * @param ?ParserInterface $parser
+     * @param ?array $routes_path path to configuration file (or a list of configuration files to load)
      */
-    public function __construct(HttpRequestInterface $request, ParserInterface $parser = null, array $routes_path = null)
+    public function __construct(HttpRequestInterface $request, ?ParserInterface $parser = null, ?array $routes_path = null)
     {
         $this->request = $request;
-        isset($parser) and $this->parser = $parser;
+        $this->parser = $parser;
 
         // set routes
         if (isset($routes_path)) {
@@ -54,9 +50,9 @@ class HttpRouter implements RouterInterface
     }
 
     /**
-     * @return ParserInterface
+     * @return ?ParserInterface
      */
-    public function getParser(): ParserInterface
+    public function getParser(): ?ParserInterface
     {
         return $this->parser;
     }
@@ -81,11 +77,13 @@ class HttpRouter implements RouterInterface
      * Filters will be registered for each regex-path where they are provided
      *
      * @param array $routes ex: {
-     *  "GET /",
-     *  "GET /one/way",
-     *  "GET /another/way": "Another\\Way",
-     *  "GET /third/way/{id}",
-     *  "GET /v1/products/{id}": "App\\ProductsController",
+     *  "GET /": "Index",
+     *  "GET /one/way": "OneWay",
+     *  "GET /another/way/{id}": "AnotherWay",
+     *  "GET /v1/products/{YM}": {
+     *      "controller": "App\\ProductsController",
+     *      "filters": {"YM": {"filter": FILTER_VALIDATE_REGEXP, "options": {"regexp": "/^\\d{4}-\\d{2}$/"}}}
+     *  },
      *  "GET /v1/users-{id}/friends application/json": {
      *      "controller": "App\\UsersController",
      *      "filters": {"id": FILTER_VALIDATE_INT}
@@ -93,114 +91,105 @@ class HttpRouter implements RouterInterface
      * }
      * will register the following in $routes.static: {
      *  "GET": {
-     *      "/": "index",
-     *      "/one/way": "one\\way",
-     *      "/another/way": "another\\way"
+     *      "/": {"controller": "Index"},
+     *      "/one/way": {"controller": "OneWay"},
      *  }
      * }
-     * ...and the following in $routes.regex: {
+     * ...and the following in $routes.dynamic: {
      *  "GET application/json": {
-     *      "#^/v1/users-(?P<id>.+)/friends$#": [
-     *          "App\\UsersController",
-     *          {"id": FILTER_VALIDATE_INT}
-     *      ]
+     *      "v1": {
+     *          "re/": {
+     *              "#^users-(?P<id>.+)$#": {
+     *                  "friends": {
+     *                      "result/": {
+     *                          "controller": "App\\UsersController",
+     *                          "filters": {"id": FILTER_VALIDATE_INT}
+     *                      }
+     *                  }
+     *              }
+     *          }
+     *      }
      *  },
      *  "GET": {
-     *      "#^/third/way/(?P<id>.+)$#": "third\\way\\_id_",
-     *      "#^/v1/products/(?P<id>.+)$#": "App\\ProductsController"
+     *      "another": {
+     *          "way": {
+     *              "re/": {
+     *                  "#^(?P<id>.+)$#": {
+     *                      "result/": {
+     *                          "controller": "App\\UsersController",
+     *                          "filters": {"id": FILTER_DEFAULT}
+     *                      }
+     *                  }
+     *              }
+     *          }
+     *      },
+     *      "v1": {
+     *          "products": {
+     *              "re/": {
+     *                  "#^(?P<id>.+)$#": {
+     *                      "result/": {
+     *                          "controller": "App\\ProductsController",
+     *                          "filters": {"YM": {"filter": FILTER_VALIDATE_REGEXP, "options": {"regexp": "/^\\d{4}-\\d{2}$/"}}}
+     *                      }
+     *                  }
+     *              }
+     *          }
+     *      }
      *  }
      * }
      * @return RouterInterface
      */
     public function parseRoutes(array $routes): RouterInterface
     {
-        $struct = [];
-        foreach ($routes as $k => $v) {
-            $method = $path = $mime = null;
-            $path_mode = null;
-            if (is_string($v)) {
-                if (is_string($k)) {
-                    $route = $k;
-                    $controller = $v;
-                } else {
-                    $route = $v;
-                    $controller = null;
-                }
-                $filters = null;
-            } elseif (is_array($v)) {
-                $route = is_string($k)
-                    ? $k
-                    : ($v['route'] ?? null);
-                if (isset($v['path-static'])) {
-                    $path = $v['path-static'];
-                    $path_mode = 'path-static';
-                } elseif (isset($v['path-regex'])) {
-                    $path = $v['path-regex'];
-                    $path_mode = 'path-regex';
-                }
-                $method = $v['method'] ?? null;
-                $mime = $v['mime-type'] ?? null;
-                $controller = $v['controller'] ?? null;
-                $filters = $v['filters'] ?? null;
-            } else {
-                $route = null;
-                $controller = null;
-                $filters = null;
+        $tree = [
+            'static' => [],
+            'dynamic' => [],
+        ];
+
+        foreach ($routes as $route => $op) {
+            if (is_string($op)) {
+                $op = ['controller' => $op];
+            }
+            list($method, $path, $mime) = explode(' ', "$route  ");
+            if ($mime !== '') {
+                $method .= " $mime";
+            } elseif ($path === '') {
+                $path = $method;
+                $method = 'GET';
             }
 
-            if (isset($route)) {
-                $parts = preg_split('/\s+/', $route, 3);
-                switch (count($parts)) {
-                    case 1:
-                        $path = $method;
-                        $method = 'GET';
-                        $mime = null;
-                        break;
-                    case 2:
-                        list($method, $path) = $parts;
-                        $mime = null;
-                        break;
-                    default:
-                        list($method, $path, $mime) = $parts;
+            if (strpos($path, '{') !== false) {
+                $path_dirs = explode('/', trim($path, '/'));
+                if (!isset($tree['dynamic'][$method])) {
+                    $tree['dynamic'][$method] = [];
                 }
-            } else {
-                if (empty($method)) {
-                    $method = 'GET';
-                }
-            }
-
-            $method_type = rtrim("$method $mime");
-            $path_normalized = Filesystem::normalizePath($path);
-            $ctr = $controller
-                ?? ($path_normalized === ''
-                    ? 'index'
-                    : preg_replace(['#[^\w/]+#', '#/#'], ['_', '\\'], $path_normalized)
-                );
-
-            switch ($path_mode) {
-                case 'path-static':
-                    $struct[$method_type]['static']["/$path_normalized"] = $ctr;
-                    break;
-
-                case 'path-regex':
-                    $struct[$method_type]['regex'][$path] = isset($filters)
-                        ? [$controller, $filters]
-                        : $controller;
-                    break;
-
-                default:
-                    if (strpos($path_normalized, '{') === false) {
-                        $struct[$method_type]['static']["/$path_normalized"] = $ctr;
-                    } elseif (isset($this->parser)) {
-                        $pattern = $this->parser->getRegex("/$path_normalized");
-                        $struct[$method_type]['regex'][$pattern] = isset($filters)
-                            ? [$ctr, $filters]
-                            : $ctr;
+                $r = &$tree['dynamic'][$method];
+                foreach ($path_dirs as $dir) {
+                    if (strpos($dir, '{') !== false) {
+                        $pattern = $this->parser->getRegex($dir);
+                        foreach ($this->parser->getVars() as $v) {
+                            if (!isset($op['filters'][$v])) {
+                                $op['filters'][$v] = FILTER_DEFAULT;
+                            }
+                        }
+                        if (!isset($r['re/'])) {
+                            $r['re/'] = [];
+                        }
+                        $r = &$r['re/'];
+                        $dir = $pattern;
                     }
+                    if (!isset($r[$dir])) {
+                        $r[$dir] = [];
+                    }
+                    $r = &$r[$dir];
+                }
+                $r['result/'] = $op;
+            } else {
+                $tree['static'][$method]['/' . trim($path, '/')] = $op;
             }
         }
 
-        $this->routes = array_replace_recursive($this->routes, $struct);
+        $this->routes = array_replace_recursive($this->routes, $tree);
 
         return $this;
     }
@@ -218,6 +207,51 @@ class HttpRouter implements RouterInterface
         return $this;
     }
 
+    protected function checkLevel(array $subtree, array $path_dirs, array $params = [], int $level = 0): ?array
+    {
+        $dir = array_shift($path_dirs);
+
+        if (isset($subtree[$dir])) {
+            if (empty($path_dirs)) {
+                if (isset($subtree[$dir]['result/'])) {
+                    $subtree[$dir]['result/']['params'] = $params;
+                    return $subtree[$dir]['result/'];
+                }
+            } else {
+                $result = $this->checkLevel($subtree[$dir], $path_dirs, $params, ++$level);
+                if ($result !== null) {
+                    return $result;
+                }
+            }
+        }
+
+        if (isset($subtree['re/'])) {
+            foreach ($subtree['re/'] as $re => $next) {
+                if (preg_match($re, $dir, $m)) {
+                    $tmp_params = [];
+                    foreach ($m as $param => $value) {
+                        if (is_string($param)) {
+                            $tmp_params[$param] = rawurldecode($value);
+                        }
+                    }
+                    if (empty($path_dirs)) {
+                        if (isset($next['result/'])) {
+                            $next['result/']['params'] = $params + $tmp_params;
+                            return $next['result/'];
+                        }
+                    } else {
+                        $result = $this->checkLevel($next, $path_dirs, $params + $tmp_params, ++$level);
+                        if ($result !== null) {
+                            return $result;
+                        }
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
     /**
      * Returns controller matching current request for the routing table
      *
@@ -229,60 +263,46 @@ class HttpRouter implements RouterInterface
      *
      * If route was not identified, default controller is returned
      *
-     * @param string|null $default_controller
-     * @return string
+     * @param ?string $default_controller
+     * @return ?string
      */
-    public function getController(string $default_controller = null): ?string
+    public function getController(?string $default_controller = null): ?string
     {
         $method = $this->request->getMethod();
-        $type = $this->request->getHeaders()['content-type'] ?? null;
-        if ($type) {
-            $method_type = "$method $type";
-            $sources = [$method_type, $method];
-        } else {
-            $method_type = $method;
-            $sources = [$method];
-        }
+        $mime = $this->request->getHeaders()['content-type'] ?? null;
+        $sources = $mime ? ["$method $mime", $method] : [$method];
 
-        if (empty($this->routes) or ! is_array($this->routes)) {
-            return $default_controller;
-        } elseif (empty($this->routes[$method_type]) and empty($this->routes[$method])) {
+        if (empty($this->routes)) {
             return $default_controller;
         }
+        $x = $this->request->getPath();
 
-        $path_normalized = '/' . Filesystem::normalizePath($this->request->getPath());
+        $path_normalized = '/' . Filesystem::normalizePath($x);
 
-        // check static path in "METHOD TYPE"
-        if (isset($this->routes[$method_type]['static'][$path_normalized])) {
-            return $this->routes[$method_type]['static'][$path_normalized];
-        // check static path in "METHOD"
-        } elseif (isset($this->routes[$method]['static'][$path_normalized])) {
-            return $this->routes[$method]['static'][$path_normalized];
+        // check static path
+        if (isset($this->routes['static']["$method $mime"][$path_normalized])) {
+            return $this->routes['static']["$method $mime"][$path_normalized]['controller'];
+        } elseif (isset($this->routes['static'][$method][$path_normalized])) {
+            return $this->routes['static'][$method][$path_normalized]['controller'];
         }
 
-        // check regex paths in "METHOD TYPE" and "METHOD"
-        foreach ($sources as $m_t) {
-            if (isset($this->routes[$m_t]['regex'])) {
-                foreach ($this->routes[$m_t]['regex'] as $regex => $ctr_flt) {
-                    $m = null;
-                    if (preg_match($regex, $path_normalized, $m)) {
-                        if (is_array($ctr_flt)) {
-                            list ($controller, $filters) = $ctr_flt;
-                            if ($filters) {
-                                $this->request->addFilters($filters);
-                            }
-                        } else {
-                            $controller = $ctr_flt;
-                        }
+        // check dynamic path
+        foreach ($sources as $source) {
+            if (isset($this->routes['dynamic'][$source])) {
+                $result = $this->checkLevel($this->routes['dynamic'][$source], explode('/', ltrim($path_normalized, '/')));
 
-                        foreach ($m as $k => $v) {
-                            if (is_string($k)) {
-                                $this->request[$k] = $v;
-                            }
-                        }
-
-                        return $controller;
+                if ($result !== null) {
+                    if (isset($result['filters'])) {
+                        $this->request->addFilters($result['filters']);
                     }
+
+                    if (isset($result['params'])) {
+                        foreach ($result['params'] as $param => $value) {
+                            $this->request[$param] = $value;
+                        }
+                    }
+
+                    return $result['controller'] ?? $default_controller;
                 }
             }
         }

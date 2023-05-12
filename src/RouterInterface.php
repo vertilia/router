@@ -39,7 +39,7 @@ interface RouterInterface
      * Returns controller matching current request for the routing table
      *
      * @param ?string $default_controller
-     * @return mixed controller name or any structure resolved from the path
+     * @return ?string controller name from routing table or default controller
      */
-    public function getController(string $default_controller = null);
+    public function getController(?string $default_controller = null): ?string;
 }
