@@ -1,6 +1,7 @@
 {
   "name": "vertilia/router",
-  "description": "Simple router library",
+  "description": "Highly efficient multi-purpose router library",
+  "keywords": ["routing", "router", "api", "controller", "tree", "tree-based", "performance", "optimization", "speed", "OpenAPI"],
   "license": "BSD-2-Clause",
   "type": "library",
   "autoload": {
@@ -13,7 +14,6 @@
   },
   "require": {
     "php": ">=7.4",
-    "ext-json": "*",
     "vertilia/filesystem": "^1.0",
     "vertilia/parser": "^1.0",
     "vertilia/request": "^1.3"

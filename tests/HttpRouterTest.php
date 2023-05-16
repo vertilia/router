@@ -68,7 +68,7 @@ class HttpRouterTest extends TestCase
             foreach ($args as $k => $v) {
                 $this->assertTrue(
                     $v === ($request[$k] ?? null),
-                    sprintf('{%s: %s} expecting %s', $k, json_encode($request[$k], true), json_encode($v, true))
+                    sprintf('{%s: %s} expecting %s', $k, serialize($request[$k]), serialize($v))
                 );
             }
         }
