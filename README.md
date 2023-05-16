@@ -89,8 +89,16 @@ accordingly and accessible inside the `HttpRequest` object in the form of, for e
 If filter for path parameter is not provided explicitly, `FILTER_DEFAULT` is used by default when a parameter is found
 in path.
 
-Yes, you need to implement the controllers and make them available via `composer` or other mechanism. This is out of
-scope of routing library, but we have a real-world example of router use below.
+Yes, you need to implement the controllers and make them available via `composer` autoloader or other mechanism. This is
+out of scope of routing library, but we have a real-world example of router use [below](#example).
+
+Also, it's up to you to decide in which form controller names are provided to the application, whether it is a class
+name as we use in our examples, or method names, or function names, or even a partial string that will be completed
+later. Implement it the way you like. We prefer the method described above, since it has several advantages. Class names
+referencable via `::class` constants make it simpler to type using IDE code completion. Also, they are more error-prone,
+since renaming a class with your IDE will either automatically rename the controller name in route file or at least
+display it as non-existent in there. You will not need to wait the integration or even deployment phase to discover the
+undefined exception. And yes, the optimisation phase described below will convert it to strings anyway.
 
 ## Providing content MIME type
 
@@ -118,7 +126,7 @@ it in a native php file. Loading it on each request will take no time with activ
 
 To use pre-compiling method:
 
-- use provided `bin/routec` route compiler script that takes all your known routes files, parses them and stores in form
+- use provided `bin/routec` route compiler script that takes a list of routes files, parses them and stores in form
   understandable by the `HttpRouter` class;
 - store this structure to the `.php` file;
 - on router instantiation, omit the `$parser` and `$routes` parameters to the constructor and set pre-compiled routes
@@ -129,7 +137,7 @@ To use pre-compiling method:
 This script needs to be executed once to translate `etc/routes.php` file into `cache/http-routes-generated.php`:
 
 ```shell
-vendor/vertilia/router/bin/routec etc/routes.php >cache/http-routes-generated.php
+vendor/bin/routec etc/routes.php >cache/http-routes-generated.php
 ```
 
 On each request we don't need to parse the whole list of routes since we use already cached structure from
