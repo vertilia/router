@@ -126,22 +126,26 @@ it in a native php file. Loading it on each request will take no time with activ
 
 To use pre-compiling method:
 
-- use provided `bin/routec` route compiler script that takes a list of routes files, parses them and stores in form
-  understandable by the `HttpRouter` class;
-- store this structure to the `.php` file;
-- on router instantiation, omit the `$parser` and `$routes` parameters to the constructor and set pre-compiled routes
-  tree via `$router->setParsedRoutes(include 'routes-optimized.php')` instead.
+- use provided `vendor/bin/routec` route compiler script that takes a list of routes files, parses them and stores in
+  form understandable by the `HttpRouter::setParsedRoutes` method;
+- save this structure to the `.php` file, ex: `routes-generated.php`;
+- in your `index.php`, on router instantiation, omit the `$parser` and `$routes` parameters to the `HttpRouter`
+  constructor and set pre-compiled routes tree via `$router->setParsedRoutes(include 'routes-generated.php')` instead.
 
 ### Example
 
-This script needs to be executed once to translate `etc/routes.php` file into `cache/http-routes-generated.php`:
+This script needs to be executed every time the routes file is updated to translate `etc/routes.php` file into
+`cache/routes-generated.php`:
 
 ```shell
-vendor/bin/routec etc/routes.php >cache/http-routes-generated.php
+vendor/bin/routec etc/routes.php >cache/routes-generated.php
 ```
 
+You may provide several input files if your routes are split between them. `routec` tool will output a final file with
+all routes combined.
+
 On each request we don't need to parse the whole list of routes since we use already cached structure from
-`cache/http-routes-generated.php`:
+`cache/routes-generated.php`:
 
 ```php
 <?php // www/index.php
@@ -162,7 +166,7 @@ $router = new HttpRouter(new HttpRequest(
 ));
 
 // set pre-compiled routes
-$router->setParsedRoutes(include __DIR__ . '/../cache/http-routes-generated.php');
+$router->setParsedRoutes(include __DIR__ . '/../cache/routes-generated.php');
 
 // set filtered variables in request and get controller name from the router
 // using NotFoundController as default
