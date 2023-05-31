@@ -57,6 +57,10 @@ return [
     '/v1/avatars/' => [
         // method GET by default if omitted
         'controller' => 'AvatarsController',
+        'filters' => [
+            'limit' => FILTER_VALIDATE_INT,
+            'offset' => FILTER_VALIDATE_INT,
+        ],
     ],
     'GET /v{ver}/avatars/ application/json' => [
         'controller' => 'AvatarsGetJsonController',

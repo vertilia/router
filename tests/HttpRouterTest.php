@@ -151,9 +151,12 @@ class HttpRouterTest extends TestCase
             [['REQUEST_METHOD' => 'POST', 'REQUEST_URI' => '/v1/orders', 'HTTP_CONTENT_TYPE' => 'application/json'],
                 null, null, null, null, 'OrdersJsonController', null, ['ver' => [1]], null],
 
-            'avatars' =>
+            'avatars static' =>
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v1/avatars'],
-                null, null, null, null, 'AvatarsController', null, null, null],
+                ['limit'=>10, 'offset' => 50], null, null, null, 'AvatarsController', null, ['limit' => 10, 'offset' => 50], null],
+            [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v1/avatars'],
+                null, null, null, null, 'AvatarsController', null, ['limit' => null, 'offset' => null], null],
+            'avatars dynamic' =>
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v2/avatars', 'HTTP_CONTENT_TYPE' => 'application/json'],
                 null, null, null, null, 'AvatarsGetJsonController', null, ['ver' => 2], null],
             [['REQUEST_METHOD' => 'GET', 'REQUEST_URI' => '/v3/avatars'],

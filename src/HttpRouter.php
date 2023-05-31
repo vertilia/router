@@ -281,8 +281,14 @@ class HttpRouter implements RouterInterface
 
         // check static path
         if (isset($this->routes['static']["$method $mime"][$path_normalized])) {
+            if (isset($this->routes['static']["$method $mime"][$path_normalized]['filters'])) {
+                $this->request->addFilters($this->routes['static']["$method $mime"][$path_normalized]['filters']);
+            }
             return $this->routes['static']["$method $mime"][$path_normalized]['controller'];
         } elseif (isset($this->routes['static'][$method][$path_normalized])) {
+            if (isset($this->routes['static'][$method][$path_normalized]['filters'])) {
+                $this->request->addFilters($this->routes['static'][$method][$path_normalized]['filters']);
+            }
             return $this->routes['static'][$method][$path_normalized]['controller'];
         }
 
