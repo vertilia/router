@@ -1,5 +1,4 @@
 <?php
-declare(strict_types=1);
 
 namespace Vertilia\Router;
 
@@ -13,7 +12,7 @@ namespace Vertilia\Router;
 interface RouterInterface
 {
     /**
-     * Adds a new list of routes to existing ones
+     * Add a new list of routes to existing ones
      *
      * @param array $routes
      * @return RouterInterface
@@ -21,14 +20,14 @@ interface RouterInterface
     public function parseRoutes(array $routes): RouterInterface;
 
     /**
-     * Returns current routing table to reuse for fast loading
+     * Return current routing table to reuse for fast loading
      *
      * @return array
      */
     public function getParsedRoutes(): array;
 
     /**
-     * Loads routing table without parsing
+     * Load routing table without parsing
      *
      * @param array $parsed_routes
      * @return self
@@ -38,8 +37,12 @@ interface RouterInterface
     /**
      * Returns controller matching current request for the routing table
      *
-     * @param ?string $default_controller
-     * @return ?string controller name from routing table or default controller
+     * @param string $route format: METHOD PATH [CONTENT-TYPE], ex: "POST /api/login application/json" or "GET /"
+     * @param ?string $default_controller name of the default controller
+     * @return ?array found leaf structure. if leaf structure is a scalar, it will be returned as an array with element
+     *  name "controller". if parameters were detected within the route, "parameters" element will be added to the
+     *  resulting array with associative array of detected parameters.
+     *  will set "controller" element to $default_controller if route not found.
      */
-    public function getController(?string $default_controller = null): ?string;
+    public function getController(string $route, ?string $default_controller = null): ?array;
 }

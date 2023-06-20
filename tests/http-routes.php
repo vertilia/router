@@ -1,5 +1,7 @@
 <?php
 
+use Vertilia\ValidArray\ValidArray;
+
 return [
     // static path => controller as value
     '/' => 'Index',
@@ -11,6 +13,7 @@ return [
     'GET /api/users--up/{id}/some.controller' => 'Api\\UsersUp\\Id\\SomeController',
     'GET /{o}.{n}.{c}.{e}.../--users-{id}-down--/--{ver}.controller--' => 'ONCE\\UsersIdDown\\VerController',
 
+    // versioned products without filters
     'GET /{ver}/products' => 'ProductsController',
     'GET /{ver}/products/{id}' => 'ProductsController',
     'POST /{ver}/products/{id}' => 'ProductsController',
@@ -80,10 +83,20 @@ return [
         'controller' => 'ProductsListController',
         'filters' => [
             'id_list' => [
-                'filter' => FILTER_CALLBACK,
-                'options' => function ($v) {
-                    return array_values(array_map('intval', array_filter(explode(',', $v), 'is_numeric'))) ?: false;
-                },
+                'filter' => ValidArray::FILTER_EXTENDED_CALLBACK,
+                'flags' => FILTER_REQUIRE_SCALAR,
+                'options' => [
+                    'callback' => fn ($v) =>
+                        array_values(
+                            array_map(
+                                'intval',
+                                array_filter(
+                                    explode(',', $v) ?: [],
+                                    'is_numeric'
+                                )
+                            )
+                        ) ?: false,
+                ],
             ],
         ],
     ]

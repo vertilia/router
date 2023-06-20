@@ -6,13 +6,12 @@ require file_exists(__DIR__ . '/../../../autoload.php')
     : (__DIR__ . '/../vendor/autoload.php');
 
 use Vertilia\Parser\OpenApiParser;
-use Vertilia\Request\HttpRequest;
-use Vertilia\Router\HttpRouter;
+use Vertilia\Router\Router;
 
 array_shift($argv);
 
-// instantiate HttpRouter and parse routes from command line
-$router = new HttpRouter(new HttpRequest([]), new OpenApiParser(), $argv);
+// instantiate Router and parse routes from command line
+$router = new Router(new OpenApiParser(), $argv);
 
 // preprocess and output parsed routing table
 echo "<?php return ";
